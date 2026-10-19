@@ -9,10 +9,10 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class KafkaReducedProductConsumer {
+public class KafkaStockReserveConsumer {
     private final IOrderService iOrderService;
-    @KafkaListener(topics = "stock-reserved",groupId = "stock-service-group")
-    public void reduceProductListener(ReducedProductEvent reducedProductEvent){
+    @KafkaListener(topics = "stock-reserved", groupId = "stock-service-group")
+    public void stockReserveListener(ReducedProductEvent reducedProductEvent){
          iOrderService.updateOrderStatusService(reducedProductEvent.getOrderId(), OrderStatus.READY_FOR_PAYMENT);
     }
 }

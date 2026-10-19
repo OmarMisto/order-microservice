@@ -2,6 +2,7 @@ package com.example.order_service.service.implementaion;
 import com.example.order_service.model.Item;
 import com.example.order_service.model.Order;
 import com.example.order_service.model.OrderStatus;
+import com.example.order_service.model.dto.ItemDto;
 import com.example.order_service.model.dto.OrderDto;
 import com.example.order_service.model.dto.OrderProductResponseDto;
 import com.example.order_service.model.dto.OrderEvent;
@@ -18,7 +19,6 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class OrderService implements IOrderService {
-
     private final OrderRepository orderRepository;
     private final  KafkaProducerService kafkaProducerService;
     @Override
@@ -49,8 +49,8 @@ public class OrderService implements IOrderService {
             throw new UpStreamException("un able to connect to message broker");
         }
     }
-
     @Override
+    @Transactional
     public void updateOrderStatusService(long orderId, OrderStatus orderStatus) {
         Order order =orderRepository.findById(orderId).orElseThrow(()->new OrderNotFoundException(" order not found"));
         order.setOrderStatus(orderStatus);
@@ -58,7 +58,19 @@ public class OrderService implements IOrderService {
     }
 
     @Override
+    @Transactional
     public OrderProductResponseDto getOrderById(long orderId) {
-        return null;
+        Order order =orderRepository.findById(orderId).orElseThrow(()->new OrderNotFoundException("order not found"));
+        return OrderProductResponseDto.builder()
+                .orderId(order.getOrderId())
+                .orderStatus(order.getOrderStatus().name())
+                .items(order.getItems().stream().map(item -> ItemDto.builder()
+                        .stockProductId(item.getProductId())
+                        .quantity(item.getQuantity())
+                        .unitPrice(item.getUnitPrice())
+                        .discountPercentage(item.getDiscountPercentage())
+                        .build()).toList())
+                .date(order.getOrderDate())
+                .build();
     }
 }

@@ -16,11 +16,11 @@ public class Item {
     @GeneratedValue(strategy = GenerationType.SEQUENCE,generator = "item_gen")
     @SequenceGenerator(name = "item_gen",sequenceName = "item_sec")
     private long itemId;
+    @Column(nullable = false,unique = true)
     private long productId;
     private BigDecimal unitPrice;
     private int quantity;
     private BigDecimal discountPercentage;
-
     @ManyToOne
     @JoinColumn(name = "orderId")
     private Order order;

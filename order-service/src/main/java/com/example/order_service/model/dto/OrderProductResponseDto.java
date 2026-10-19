@@ -13,7 +13,7 @@ import java.util.List;
 @ToString
 public class OrderProductResponseDto {
     private long orderId;
+    private String orderStatus;
     private List<ItemDto> items;
-
     private LocalDateTime date;
 }
