@@ -1,29 +1,64 @@
 package com.example.order_service.service.implementaion;
-
-import com.example.order_service.client.StockFeignClient;
-import com.example.order_service.model.dto.GetStockProductDto;
-import com.example.order_service.model.dto.ReduceProductDto;
-import com.example.order_service.model.dto.OrderProductDto;
+import com.example.order_service.model.Item;
+import com.example.order_service.model.Order;
+import com.example.order_service.model.OrderStatus;
+import com.example.order_service.model.dto.OrderDto;
 import com.example.order_service.model.dto.OrderProductResponseDto;
+import com.example.order_service.model.dto.OrderEvent;
+import com.example.order_service.repository.OrderRepository;
 import com.example.order_service.service.IOrderService;
-import com.example.order_service.service.exception.StockOutOfRequiredQuantityException;
+import com.example.order_service.service.exception.OrderNotFoundException;
+import com.example.order_service.service.exception.UpStreamException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService implements IOrderService {
-    private final StockFeignClient stockFeignClient;
+
+    private final OrderRepository orderRepository;
+    private final  KafkaProducerService kafkaProducerService;
     @Override
-    public OrderProductResponseDto orderService(OrderProductDto orderProductDto) {
-        GetStockProductDto getStockProductDto=stockFeignClient.getStockProductByIdController(orderProductDto.getStockProductId());
-        if(orderProductDto.getQuantity()>getStockProductDto.getQuantity()){
-           throw new StockOutOfRequiredQuantityException("stock out of required quantity");
+    @Transactional
+    public void orderService(OrderDto orderDto) {
+        Order savedOrder= orderRepository.save(Order.builder()
+                .userId(orderDto.getUserId())
+                .orderDate(LocalDateTime.now())
+                .orderStatus(OrderStatus.PENDING)
+                .items(orderDto.getItems().stream()
+                        .map(itemDto -> Item.builder()
+                                .productId(itemDto.getStockProductId())
+                                .unitPrice(itemDto.getUnitPrice())
+                                .quantity(itemDto.getQuantity())
+                                .discountPercentage(itemDto.getDiscountPercentage())
+
+                                .build())
+                        .toList())
+                .build());
+        try {
+            kafkaProducerService.sendOrder(OrderEvent.builder()
+                    .orderId(savedOrder.getOrderId())
+                    .items(orderDto.getItems())
+                    .event("order_created")
+                    .date(LocalDateTime.now())
+                    .build());
+        }catch (Exception e){
+            throw new UpStreamException("un able to connect to message broker");
         }
+    }
 
+    @Override
+    public void updateOrderStatusService(long orderId, OrderStatus orderStatus) {
+        Order order =orderRepository.findById(orderId).orElseThrow(()->new OrderNotFoundException(" order not found"));
+        order.setOrderStatus(orderStatus);
+        orderRepository.save(order);
+    }
 
-        stockFeignClient.reduceStockProductController(ReduceProductDto.builder().productId(orderProductDto.getStockProductId()).quantity(orderProductDto.getQuantity()).build());
-
+    @Override
+    public OrderProductResponseDto getOrderById(long orderId) {
         return null;
     }
 }

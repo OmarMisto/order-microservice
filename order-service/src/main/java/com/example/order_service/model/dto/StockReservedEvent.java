@@ -6,10 +6,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ToString
 @Getter
 @Setter
-public class PaymentDto {
-    private String cardNo;
-    private LocalDateTime expireDate;
+@ToString
+public class StockReservedEvent {
+    private long orderId;
+    private String event;
+    private LocalDateTime date;
+    private String message;
 }

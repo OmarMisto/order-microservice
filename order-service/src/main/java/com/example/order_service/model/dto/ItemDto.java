@@ -2,16 +2,17 @@ package com.example.order_service.model.dto;
 
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @Builder
 @ToString
-public class OrderProductDto {
+public class ItemDto {
     private long stockProductId;
-    private long userId;
     private int quantity;
-    private String deleverLocation;
-    private PaymentDto payment;
+    private BigDecimal unitPrice;
+    private BigDecimal discountPercentage;
 }
