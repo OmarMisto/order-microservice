@@ -6,6 +6,6 @@ import com.example.order_service.model.dto.OrderProductResponseDto;
 
 public interface IOrderService {
     public void orderService(OrderDto orderDto);
-    public void updateOrderStatusService(long orderId, OrderStatus orderStatus);
+    public void updateOrderStatusService(long orderId,String message ,OrderStatus orderStatus);
     public OrderProductResponseDto getOrderById(long orderId);
 }

@@ -13,6 +13,6 @@ public class KafkaStockReserveConsumer {
     private final IOrderService iOrderService;
     @KafkaListener(topics = "stock-reserved", groupId = "stock-service-group")
     public void stockReserveListener(ReducedProductEvent reducedProductEvent){
-         iOrderService.updateOrderStatusService(reducedProductEvent.getOrderId(), OrderStatus.READY_FOR_PAYMENT);
+         iOrderService.updateOrderStatusService(reducedProductEvent.getOrderId(),null ,OrderStatus.READY_FOR_PAYMENT);
     }
 }

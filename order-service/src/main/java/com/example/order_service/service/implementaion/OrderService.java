@@ -2,12 +2,10 @@ package com.example.order_service.service.implementaion;
 import com.example.order_service.model.Item;
 import com.example.order_service.model.Order;
 import com.example.order_service.model.OrderStatus;
-import com.example.order_service.model.dto.ItemDto;
-import com.example.order_service.model.dto.OrderDto;
-import com.example.order_service.model.dto.OrderProductResponseDto;
-import com.example.order_service.model.dto.OrderEvent;
+import com.example.order_service.model.dto.*;
 import com.example.order_service.repository.OrderRepository;
 import com.example.order_service.service.IOrderService;
+import com.example.order_service.service.exception.OrderFailedException;
 import com.example.order_service.service.exception.OrderNotFoundException;
 import com.example.order_service.service.exception.UpStreamException;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +19,7 @@ import java.time.LocalDateTime;
 public class OrderService implements IOrderService {
     private final OrderRepository orderRepository;
     private final  KafkaProducerService kafkaProducerService;
+    private final KafkaPaymentDuesService kafkaPaymentDuesService;
     @Override
     @Transactional
     public void orderService(OrderDto orderDto) {
@@ -51,10 +50,23 @@ public class OrderService implements IOrderService {
     }
     @Override
     @Transactional
-    public void updateOrderStatusService(long orderId, OrderStatus orderStatus) {
+    public void updateOrderStatusService(long orderId,String message ,OrderStatus orderStatus) {
         Order order =orderRepository.findById(orderId).orElseThrow(()->new OrderNotFoundException(" order not found"));
+        if (orderStatus.name().equalsIgnoreCase("failed")){
+            order.setOrderStatus(orderStatus);
+            orderRepository.save(order);
+            throw new OrderFailedException(message);
+        }
         order.setOrderStatus(orderStatus);
         orderRepository.save(order);
+        kafkaPaymentDuesService.sendPaymentDues(PaymentDuesEvent.builder()
+                .orderId(order.getOrderId())
+                .userId(order.getUserId())
+                .date(LocalDateTime.now())
+                .items(order.getItems()
+                        .stream()
+                        .map(item -> ItemDto.builder().stockProductId(item.getProductId()).quantity(item.getQuantity()).unitPrice(item.getUnitPrice()).discountPercentage(item.getDiscountPercentage()).build()).toList())
+                .build());
     }
 
     @Override

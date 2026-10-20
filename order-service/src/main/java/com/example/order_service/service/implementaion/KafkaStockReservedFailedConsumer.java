@@ -13,6 +13,6 @@ public class KafkaStockReservedFailedConsumer {
     private final IOrderService iOrderService;
     @KafkaListener(topics = "stock-reserved-failed",groupId = "stock-group")
     public void stockReservedListener(StockReservedEvent stockReservedEvent){
-        iOrderService.updateOrderStatusService(stockReservedEvent.getOrderId(), OrderStatus.FAILED);
+        iOrderService.updateOrderStatusService(stockReservedEvent.getOrderId(),stockReservedEvent.getMessage(), OrderStatus.FAILED);
     }
 }
