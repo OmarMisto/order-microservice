@@ -20,7 +20,7 @@ public class Item {
     private long productId;
     private BigDecimal unitPrice;
     private int quantity;
-    private BigDecimal discountPercentage;
+    private double discountPercentage;
     @ManyToOne
     @JoinColumn(name = "orderId")
     private Order order;

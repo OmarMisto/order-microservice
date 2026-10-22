@@ -13,13 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService implements IOrderService {
     private final OrderRepository orderRepository;
     private final  KafkaProducerService kafkaProducerService;
-    private final KafkaPaymentDuesService kafkaPaymentDuesService;
     @Override
     @Transactional
     public void orderService(OrderDto orderDto) {
@@ -33,7 +33,6 @@ public class OrderService implements IOrderService {
                                 .unitPrice(itemDto.getUnitPrice())
                                 .quantity(itemDto.getQuantity())
                                 .discountPercentage(itemDto.getDiscountPercentage())
-
                                 .build())
                         .toList())
                 .build());
@@ -50,23 +49,15 @@ public class OrderService implements IOrderService {
     }
     @Override
     @Transactional
-    public void updateOrderStatusService(long orderId,String message ,OrderStatus orderStatus) {
+    public Order updateOrderStatusService(long orderId, Optional<String> message , OrderStatus orderStatus) {
         Order order =orderRepository.findById(orderId).orElseThrow(()->new OrderNotFoundException(" order not found"));
-        if (orderStatus.name().equalsIgnoreCase("failed")){
+        if (orderStatus.name().equalsIgnoreCase("failed")&& message.isPresent()){
             order.setOrderStatus(orderStatus);
             orderRepository.save(order);
-            throw new OrderFailedException(message);
+            throw new OrderFailedException(message.get());
         }
         order.setOrderStatus(orderStatus);
-        orderRepository.save(order);
-        kafkaPaymentDuesService.sendPaymentDues(PaymentDuesEvent.builder()
-                .orderId(order.getOrderId())
-                .userId(order.getUserId())
-                .date(LocalDateTime.now())
-                .items(order.getItems()
-                        .stream()
-                        .map(item -> ItemDto.builder().stockProductId(item.getProductId()).quantity(item.getQuantity()).unitPrice(item.getUnitPrice()).discountPercentage(item.getDiscountPercentage()).build()).toList())
-                .build());
+        return orderRepository.save(order);
     }
 
     @Override

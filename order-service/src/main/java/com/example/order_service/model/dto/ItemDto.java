@@ -14,5 +14,5 @@ public class ItemDto {
     private long stockProductId;
     private int quantity;
     private BigDecimal unitPrice;
-    private BigDecimal discountPercentage;
+    private double discountPercentage;
 }
